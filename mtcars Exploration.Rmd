@@ -1,0 +1,217 @@
+# Exploring mtcars dataset
+
+### You work for Motor Trend, a magazine about the automobile industry. Looking at a data set of a collection of cars, they are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome).
+
+--------------------------------------------------------------------------------------------------
+
+
+## Data attributes
+• (mpg)     Miles/(US) gallon.
+
+• (cyl)     Number of cylinders.
+
+• (disp)    Displacement (cu.in.).
+
+• (hp)      Gross horsepower.
+
+• (drat)    Rear axle ratio.
+
+• (wt)      Weight (1000 lbs).
+
+• (qsec)    1/4 mile time.
+
+• (vs)      Engine (0 = V-shaped, 1 = straight).
+
+• (am)      Transmission (0 = automatic, 1 = manual).
+
+• (gear)    Number of forward gears.
+
+• (carb)    Number of carburetors.
+
+
+## Imports
+```{r}
+library("ggplot2")
+library("reshape2")
+
+```
+
+
+# Adding the Dataset
+```{r}
+
+df = mtcars
+print(df)
+
+```
+
+## The relation between Weight(wt) and Mile Per Gallon(mpg).
+#### Conclusion: by increasing of car weight the distance travelled per gallon decreases.
+```{r}
+
+plt_1 = ggplot(df, aes(x=wt,y=mpg)) + geom_point()
+print(
+  plt_1 + 
+    ggtitle("Increasing of car weight the distance travelled per gallon decreases") + 
+    labs(y = "Mile Per Gallon Miles/(US) gallon", x = "Car Weight (1000 lbs)") 
+  )
+
+```
+
+
+## The relation between Mile Per Gallon(mpg) and transmission(am) according to being automatic or manual .
+#### 1 = Manual.
+#### 0 = Automatic.
+#### Conclusion: Manual cars travel more miles per gallon.
+```{r}
+
+plt_2 = ggplot(df,aes(x=wt,y=mpg,group=am)) +
+        geom_point(aes(color=am)
+        )
+
+print(
+  plt_2 +
+    ggtitle("Manual cars travel more miles per gallon") +
+    labs(y = "Mile Per Gallon Miles/(US) gallon", x = "Car Weight (1000 lbs)")  
+      )
+
+
+```
+
+## Quantify the MPG difference between automatic and manual transmissions.
+```{r}
+# barplot 
+# sum of Miles per gallon for manual cars
+# sum of Miles per gallon for automatic cars
+
+mpg_sum_auto <- sum(df[which(df$am==0), 1])
+mpg_sum_manual <- sum(df[which(df$am==1), 1])
+mpg_diff = mpg_sum_auto - mpg_sum_manual
+
+ggplot(data=df, aes(x=am, y=mpg))+
+  geom_bar(stat="identity", width=0.7, fill="steelblue") +
+  ggtitle(paste("Sum of automatic MPG = ", mpg_sum_auto , " Miles\nSum of manual MPG = ", mpg_sum_manual , " Miles\nDifference = " , mpg_diff , " Miles")) +
+  labs(y = "Total Miles Per Gallon Miles/(US) gallon", x = "Car Weight (1000 lbs)")  
+
+
+
+```
+
+## Relationships between multiple variables using corellation mx.
+```{r}
+
+cormat <- round(cor(df),2)
+head(cormat)
+
+```
+
+
+### melt():
+#### It enables us to reshape and elongate the data frames.
+#### It organizes the data values in a long data frame format.
+#### we need it in this elongated shape to plot the Heatmap.
+```{r}
+
+melted_cormat <- melt(cormat)
+head(melted_cormat)
+
+```
+
+
+### We will use heatmap to analyze at least one dependent variable and three independent variables.
+```{r}
+
+ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value , label = value), color = "black", size = 4 ) + 
+  
+  geom_tile(color = "white") +
+ scale_fill_gradient2(low = "deepskyblue1", high = "hotpink2", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Variable\nDependency\n(corelation)") +
+  
+  geom_text(aes(Var2, Var1, label = value), color = "black", size = 4)
+
+```
+
+#### Conclusion
+Dependent variable: the variable will be dependent when the correlation is the largest.
+Independent variable: the variable will be independent when the correlation is the smallest.
+
+Dependent on mpg: Rear axle ratio, Engine (0 = V-shaped, 1 = straight), Transmission (0 = automatic, 1 = manual). 
+Independent on mpg: weight.
+
+```{r}
+# for general dependency 
+
+dependency = colMeans(cormat)
+print(dependency)
+# large number means dependent (correlated) on the rest of the features.
+# small number means independent (uncorrelated) on the rest of the features.
+
+```
+
+## To find the best model fit to explain the relationship between the set of variables and miles per gallon (MPG) through a variable selection procedure called stepwise regression.
+```{r}
+
+# lock the randomization process
+set.seed(42)
+
+# choose random indices and set them as training/testing sets
+n = nrow(mtcars)
+index = sample(n, n*0.80, replace = FALSE)
+train_set = mtcars[index,]
+test_set = mtcars[-index,]
+
+train_set
+test_set
+
+```
+
+## Forward Selection
+```{r}
+# combination of regression
+# mpg with < cyl , disp , hp , drat , wt , qsec , vs , am , gear , carb >
+
+model_full = lm(mpg ~ ., data = train_set)
+model_int = lm(mpg ~ -., data = train_set)
+
+scopeformula = formula(model_full)
+scopeformula
+
+```
+```{r}
+fwd_sel = step(object=model_int, scope=scopeformula, direction="forward")
+```
+```{r}
+summary(fwd_sel)
+```
+
+## Backward Selection
+```{r}
+
+model_full = lm(mpg ~ ., data = train_set)
+scopeformula = formula(model_full)
+
+back_sel = step(object=model_full, scope=scopeformula, direction="backward")
+
+```
+```{r}
+summary(back_sel)
+```
+
+## Plotting for linear regression assumptions:
+```{r}
+plot(back_sel)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
